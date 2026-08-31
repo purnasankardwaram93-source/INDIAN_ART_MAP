@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Art Map of India</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+    --bg:#181512;
+    --panel:#211d19;
+    --gold:#c9a24b;
+    --rust:#b1502c;
+    --text:#ece6da;
+    --muted:#9c9488;
+  }
+  * { box-sizing: border-box; }
+  body{
+    margin:0;
+    font-family: 'Courier New', 'Consolas', monospace;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header{
+    padding: 24px 30px 18px;
+    border-bottom: 2px solid var(--gold);
+  }
+  header h1{
+    margin: 0 0 6px;
+    font-size: 1.7rem;
+    letter-spacing: 1px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+  header p{
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
+    letter-spacing: 0.3px;
+  }
+  #layout{
+    display: flex;
+    flex-wrap: wrap;
+  }
+  #index{
+    flex: 0 0 320px;
+    background: var(--panel);
+    max-height: 620px;
+    overflow-y: auto;
+    border-right: 2px solid var(--gold);
+  }
+  .idx-item{
+    display: flex;
+    gap: 14px;
+    padding: 14px 18px;
+    border-bottom: 1px solid #332d26;
+    cursor: pointer;
+    align-items: center;
+  }
+  .idx-item:hover{ background: #2a241f; }
+  .idx-num{
+    font-size: 1.3rem;
+    color: var(--rust);
+    font-weight: bold;
+    width: 28px;
+    flex-shrink: 0;
+  }
+  .idx-text .idx-name{
+    font-size: 0.92rem;
+    color: var(--text);
+    font-weight: bold;
+  }
+  .idx-text .idx-region{
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  #map{
+    flex: 1 1 620px;
+    min-width: 300px;
+    height: 620px;
+    filter: grayscale(0.15) contrast(1.05);
+  }
+  .popup-card{ width: 230px; font-family: 'Courier New', monospace; }
+  .popup-card img{
+    width: 100%; height: 140px; object-fit: cover;
+    border: 2px solid var(--gold); margin-bottom: 8px;
+  }
+  .popup-card h3{
+    margin: 0 0 4px; font-size: 0.95rem; color: var(--rust);
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .popup-card .region{
+    font-size: 0.7rem; color: var(--gold); font-weight: bold;
+    margin-bottom: 6px;
+  }
+  .popup-card p{ font-size: 0.78rem; line-height: 1.3; margin: 0; color: #333; }
+  footer{
+    background: var(--panel); color: var(--muted);
+    font-size: 0.72rem; text-align: center; padding: 10px;
+    border-top: 2px solid var(--gold);
+  }
+  @media (max-width: 800px){
+    #map{ height: 400px; }
+    #index{ max-height: none; flex: 1 1 100%; border-right: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Art Map of India</h1>
+  <p>// eight regional painting traditions, indexed and mapped</p>
+</header>
+
+<div id="layout">
+  <div id="index"></div>
+  <div id="map"></div>
+</div>
+
+<footer>Map data © OpenStreetMap contributors · Images © Wikimedia Commons contributors</footer>
+
+<script>
+const artLocations = [
+  {
+    name: "Rogan Art",
+    region: "Nirona, Kutch, Gujarat",
+    lat: 23.6270, lng: 69.7220,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Rogan%20art.jpg",
+    desc: "A rare cloth-painting craft from Kutch using thick castor-oil-based paint pulled into fine threads with a metal stylus, traditionally used to decorate bridal clothing and kept alive by only one family today."
+  },
+  {
+    name: "Bhil Painting",
+    region: "Jhabua, Madhya Pradesh",
+    lat: 22.7670, lng: 74.5900,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Bhil%20painting.jpg",
+    desc: "Tribal art of the Bhil community built from dense fields of dots in bright colour, depicting deities, trees and everyday life, closely related in technique to Gond dot-work but distinct in motif and palette."
+  },
+  {
+    name: "Saura Painting",
+    region: "Rayagada, Odisha",
+    lat: 19.1700, lng: 83.4200,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Saura%20painting.jpg",
+    desc: "Wall paintings of the Lanjia Saura tribal community, drawn in white rice-paste on a mud-red base — geometric processions of people, animals and trees offered as ritual art (ikons) to local deities."
+  },
+  {
+    name: "Basohli Painting",
+    region: "Basohli, Jammu & Kashmir",
+    lat: 32.5667, lng: 75.7500,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Shiva%2C%20Vishnu%2C%20and%20Brahma%20Adoring%20Kali%2C%20ca.%201740%2C%20Basohli%2CLACMA.jpg",
+    desc: "One of the earliest Pahari miniature schools, known for bold, vivid colour, large stylised eyes and the use of beetle-wing cases to render jewellery — it predates and influenced the later Kangra style."
+  },
+  {
+    name: "Pithora Painting",
+    region: "Chhota Udaipur, Gujarat",
+    lat: 22.3000, lng: 74.0200,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Pithora%20painting.jpg",
+    desc: "A ritual mural made by the Rathwa and Bhilala communities on the inner walls of a home, densely packed with horses, the sun and moon, and village life — commissioned as an offering to Baba Pithora for prosperity."
+  },
+  {
+    name: "Alpana Floor Painting",
+    region: "Shantiniketan, West Bengal",
+    lat: 23.6800, lng: 87.6800,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Alpana.jpg",
+    desc: "A ritual floor-painting tradition made freehand with rice-paste and fingertips at thresholds and courtyards for festivals and weddings, using flowing organic motifs — lotuses, fish, footprints and creepers."
+  },
+  {
+    name: "Chittara Art",
+    region: "Sagar, Karnataka",
+    lat: 14.1667, lng: 75.0333,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Chittara%20art.jpg",
+    desc: "A geometric mural tradition of the Deewaru community of Malnad, Karnataka, painted in white rice-paste on a red-ochre or cow-dung base, marking weddings and festivals with rows of stylised figures and patterns."
+  },
+  {
+    name: "Ellora Cave Paintings",
+    region: "Ellora, Maharashtra",
+    lat: 20.0258, lng: 75.1780,
+    img: "https://commons.wikimedia.org/wiki/Special:FilePath/Ellora%20Caves%20painting.jpg",
+    desc: "Painted alongside the rock-cut Ellora temples, these murals blend Hindu, Buddhist and Jain imagery from roughly the 6th to 10th centuries, continuing the fresco tradition seen earlier at nearby Ajanta."
+  }
+];
+
+const map = L.map('map', { scrollWheelZoom: false }).setView([23.0, 78.5], 5);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+const indexEl = document.getElementById('index');
+const markers = [];
+
+artLocations.forEach((loc, i) => {
+  const popupHtml = `
+    <div class="popup-card">
+      <img src="${loc.img}" alt="${loc.name}" loading="lazy">
+      <h3>${loc.name}</h3>
+      <div class="region">${loc.region}</div>
+      <p>${loc.desc}</p>
+    </div>
+  `;
+  const marker = L.circleMarker([loc.lat, loc.lng], {
+    radius: 8,
+    fillColor: '#c9a24b',
+    color: '#181512',
+    weight: 2,
+    fillOpacity: 0.95
+  }).addTo(map).bindPopup(popupHtml, { maxWidth: 260 });
+  markers.push(marker);
+
+  const item = document.createElement('div');
+  item.className = 'idx-item';
+  item.innerHTML = `
+    <div class="idx-num">${String(i+1).padStart(2,'0')}</div>
+    <div class="idx-text">
+      <div class="idx-name">${loc.name}</div>
+      <div class="idx-region">${loc.region}</div>
+    </div>
+  `;
+  item.addEventListener('click', () => {
+    map.setView([loc.lat, loc.lng], 7);
+    marker.openPopup();
+  });
+  indexEl.appendChild(item);
+});
+</script>
+
+</body>
+</html>
